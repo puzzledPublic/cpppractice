@@ -194,7 +194,7 @@ DWORD WINAPI ProcessClient(LPVOID arg) {
 	}
 
 	closesocket(client_sock);
-	DisplayText("[TCP 서버] 크라이언트 종료: IP 주소=%s, 포트 번호=%d\r\n", inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
+	DisplayText("[TCP 서버] 클라이언트 종료: IP 주소=%s, 포트 번호=%d\r\n", inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
 
 	return 0;
 }
