@@ -105,13 +105,28 @@ FD_OOB		- OOB 데이터가 도착했다.			(recv(), recvfrom())
 ```
 #### 네트워크 이벤트 발생시 윈도우 프로시저에 전달되는 내용
 ```
-LRESULT CALLBACK WndProc(HWND hWnd, UNIT uMsg, WPARAM wParam, LPARAM lParam) {...}
-
-hWnd		- 메시지가 발생한 윈도우의 핸들
-uMsg		- WSAAsyncSelect() 함수 호출시 등록했던 사용자 정의 메시지
-wParam		- 네트워크 이벤트가 발생한 소켓. SOCKET으로 형변환하여 소켓 함수 호출에 그대로 사용
-lParam		- 하위 16비트는 발생한 네트워크 이벤트, 상위 16비트는 오류 코드를 담고 있다. 항상 오류 코드를 먼저 확인 후 네트워크 이벤트를 처리해야 한다. 각각을 위한 정의 된 매크로가 있다. (WSAGETSELECTEVENT(lParam), WSAGETSELECTERROR(lParam))
+LRESULT CALLBACK WndProc(
+	HWND hWnd, 
+	UNIT uMsg, 
+	WPARAM wParam, 
+	LPARAM lParam
+) {...}
 ```
+- hWnd  
+메시지가 발생한 윈도우의 핸들
+
+- uMsg  
+WSAAsyncSelect() 함수 호출시 등록했던 사용자 정의 메시지
+
+- wParam  
+네트워크 이벤트가 발생한 소켓.  
+SOCKET으로 형변환하여 소켓 함수 호출에 그대로 사용
+
+- lParam  
+하위 16비트는 발생한 네트워크 이벤트, 상위 16비트는 오류 코드를 담고 있다.  
+항상 오류 코드를 먼저 확인 후 네트워크 이벤트를 처리해야 한다.  
+각각을 위한 정의 된 매크로가 있다. (WSAGETSELECTEVENT(lParam), WSAGETSELECTERROR(lParam))
+
 #### 유의점
 1. WSAAsyncSelect()함수 호출시 해당 소켓은 자동으로 넌블로킹 모드로 전환된다.  
 블로킹 소켓은 윈도우 메시지 루프를 정지시킬 가능성이 있기때문이다.
@@ -200,7 +215,8 @@ int WSAEnumNetworkEvents(
 	WSAEVENT hEventObject,					- 대상 소켓 s와 짝지어둔 이벤트 객체 핸들을 넘겨주면 이벤트 객체가 자동으로 비신호 상태가 된다. 선택 사항이므로 사용하지 않으려면 NULL을 넘겨주면 된다.
 	LPWSANETWORKEVENTS lpNetworkEvents			- WSANETWORKEVENTS 구조체 변수 주소값을 전달하면 발생한 네트어크 이벤트와 오류 정보가 이 변수에 저장된다.
 ); (return 성공 - 0, 실패 - SOCKET_ERROR)
-
+```
+```
 typedef struct _WSANETWORKEVENTS {
 	long lNetworkEvents;					- 상수값이 조합된 형태로 저장되어 발생한 이벤트를 알려준다.
 	int iErrorCode[FD_MAX_EVENTS];				- 네트워크 이벤트와 연관된 오류 정보가 저장된다. 오류 정보 참조시 배열 인덱스 값을 사용해야 한다.
@@ -209,8 +225,9 @@ typedef struct _WSANETWORKEVENTS {
 	네트워크 이벤트 - FD_ACCEPT, FD_READ, FD_WRITE, FD_CLOSE, FD_CONNECT, FD_OOB
 	배열 인덱스 - FD_ACCEPT_BIT, FD_READ_BIT, FD_WRITE_BIT, FD_CLOSE_BIT, FD_CONNECT_BIT, FD_OOB_BIT
 <hr>
+
 Overlapped Model
-------------------
+----------------  
 #### 동작원리
 원래 Overlapped 입출력 방식은 윈도우 운영체제에서 고성능 파일 입출력을 위해 제공하는데, 이를 소켓 입출력에도 사용할 수 있게 만든 것.
 
@@ -233,7 +250,7 @@ Overlapped Model
 #### Overlapped Model의 종류
 1. Overlapped Model 1 - 소켓 입출력 작업이 완료되면 운영체제는 응용 프로그램이 등록해둔 이벤트 객체를 신호 상태로 바꾼다.  
 응용 프로그램은 이벤트 객체를 관찰함으로써 입출력 작업 완료를 감지할 수 있다.  
-Overlapped 모델을 사용하는 주된 이유는 데이터를 보내고 받는 작업을 효율적으로 처리하기 위해서다.
+Overlapped Model을 사용하는 주된 이유는 데이터를 보내고 받는 작업을 효율적으로 처리하기 위해서다.
 
 2. Overlapped Model 2 - 소켓 입출력 작업이 완료되면 운영체제는 응용 프로그램이 등록해둔 함수를 자동으로 호출한다.  
 일반적으로 운영체제가 호출하는 응용 프로그램 함수를 콜백 함수(callback function)라 하는데, 특별히 Overlapped Model 에서는 완료 루틴(completion routine)이라 부른다.
@@ -256,7 +273,8 @@ int WSASend(
 	LPWSAOVERLAPPED lpOverlapped,		- WSAOVERLAPPED 구조체의 주소 값, WSAOVERLAPPED 구조체는 비동기 입출력을 위한 정보를 운영체제에 전달하거나, 운영체제가 비동기 입출력 결과를 응용 프로그램에 알려줄 때 사용
 	LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine	- 입출력 작업이 완료되면 운영체제가 자동으로 호출할 완료 루틴(콜백 함수)의 주소 값.
 )	(return 성공 - 0, 실패 - SOCKET_ERROR)
-
+```
+```
 int WSARecv( 
 	SOCKET s,
 	LPWSABUF lpBuffers,
@@ -266,18 +284,20 @@ int WSARecv(
 	LPWSAOVERLAPPED lpOverlapped,
 	LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
 )	(return 성공 - 0, 실패 - SOCKET_ERROR)
-
+```
+```
 typedef struct __WSABUF {
-	u_long len,		- 길이(바이트 단위)
-	char *buf		- 버퍼 시작 주소
+	u_long len;		- 길이(바이트 단위)
+	char *buf;		- 버퍼 시작 주소
 }WSABUF, *LPWSABUF;
-
+```
+```
 typedef struct _WSAOVERLAPPED {
-	DWORD Internal,
-	DWORD InternalHigh,
-	DWORD Offset,
-	DWORD OffsetHigh,
-	WSAEVENT hEvent			- 이벤트 객체의 핸들 값, Overlapped Model 1에서만 사용, 입출력 작업이 완료되면 hEvent가 가리키는 이벤트 객체는 신호 상태가 된다.
+	DWORD Internal;
+	DWORD InternalHigh;
+	DWORD Offset;
+	DWORD OffsetHigh;
+	WSAEVENT hEvent;		- 이벤트 객체의 핸들 값, Overlapped Model 1에서만 사용, 입출력 작업이 완료되면 hEvent가 가리키는 이벤트 객체는 신호 상태가 된다.
 }WSAOVERLAPPED, *LPWSAOVERLAPPED;
 ```
 
@@ -328,13 +348,30 @@ typedef struct _WSAOVERLAPPED {
 
 ```
 BOOL WSAGetOverlappedResult(
-	SOCKET s,					- 비동기 입출력 함수 호출에 사용했던 소켓을 넣는다.
-	LPWSAOVERLAPPED lpOverlapped,			- 비동기 입출력 함수 호출에 사용했던 WSAOVEERLAPPED 구조체를 다시 넣는다.
-	LPDWORD lpcbTransfer,				- 전송된 바이트 수가 여기에 저장된다.
-	BOOL fWait,					- 비동기 입출력 작업이 끝날 때까지 대기하려면 TRUE, 그렇지 않으면 FALSE를 사용한다. WSAWaitForMultipleEvents() 함수를 이전에 호출해서 리턴했다면(3단계) 비동기 입출력 작업이 끝난다는 뜻이므로 FALSE를 사용하면 된다.
-	LPDWORD lpdwFlags				- 비동기 입출력 작업과 관련된 부가적인 정보가 여기에 저장된다. 이 값은 거의 사용하지 않으므로 무시해도 좋다.
+	SOCKET s,
+	LPWSAOVERLAPPED lpOverlapped,
+	LPDWORD lpcbTransfer,
+	BOOL fWait,
+	LPDWORD lpdwFlags
 ) (return 성공 - TRUE, 실패 - FALSE)
 ```
+
+- s  
+비동기 입출력 함수 호출에 사용했던 소켓을 넣는다.
+
+- lpOverlapped  
+비동기 입출력 함수 호출에 사용했던 WSAOVEERLAPPED 구조체를 다시 넣는다.
+
+- lpcbTransfer  
+전송된 바이트 수가 여기에 저장된다.
+
+- fWait  
+비동기 입출력 작업이 끝날 때까지 대기하려면 TRUE, 그렇지 않으면 FALSE를 사용한다.  
+WSAWaitForMultipleEvents() 함수를 이전에 호출해서 리턴했다면(3단계) 비동기 입출력 작업이 끝난다는 뜻이므로 FALSE를 사용하면 된다.
+
+- lpdwFlags  
+비동기 입출력 작업과 관련된 부가적인 정보가 여기에 저장된다.  
+이 값은 거의 사용하지 않으므로 무시해도 좋다.
 
 #### Overlapped Model 2의 동작 원리
 1. 비동기 입출력 함수를 호출함으로써 운영체제에 입출력 작업을 요청한다.
@@ -380,9 +417,198 @@ Sleep() 함수 등을 호출하여 진입하는 일반적인 wait 상태와의 차이는 무엇인가?
 #### 운영체제가 호출하는 완료 루틴의 형태
 ```
 void CALLBACK CompletionRoutine(
-	DWORD dwError,					- 비동기 입출력 결과, 오류가 발생하면 0이 아닌 값이 된다.
-	DWORD cbTransferred,				- 전송 바이트 수, 통신 상대가 접속을 종료하면 이 값은 0이 된다
-	LPWSAOVERLAPPED lpOverlapped,			- 비동기 입출력 함수 호출 시 넘겨준 WSAOVERLAPPED 구조체의 주소값이 이 인자를 통해 다시 응용 프로그램에 넘어온다. (Overlapped Model 2 에서는 이벤트 객체를 사용하지 않으므로 WSAOVERLAPPED 구조체를 완료 루틴 내부에서 직접 사용하는 일은 없다.)
-	DWORD dwFlags					- 항상 0이므로 적어도 현재까지는 사용하지 않는다.
+	DWORD dwError,
+	DWORD cbTransferred,
+	LPWSAOVERLAPPED lpOverlapped,
+	DWORD dwFlags
 )
 ```
+- dwError  
+비동기 입출력 결과, 오류가 발생하면 0이 아닌 값이 된다.
+
+- cbTransferred  
+전송 바이트 수, 통신 상대가 접속을 종료하면 이 값은 0이 된다.
+
+- lpOverlapped  
+비동기 입출력 함수 호출 시 넘겨준 WSAOVERLAPPED 구조체의 주소값이 이 인자를 통해 다시 응용 프로그램에 넘어온다.  
+(Overlapped Model 2 에서는 이벤트 객체를 사용하지 않으므로 WSAOVERLAPPED 구조체를 완료 루틴 내부에서 직접 사용하는 일은 없다.)
+
+- dwFlags  
+항상 0이므로 적어도 현재까지는 사용하지 않는다.
+
+<hr>
+
+Completion Port Model
+---------------------  
+#### 동작원리
+Completion Port Model의 핵심은 입출력 완료 포트라는 윈도우 운영체제가 제공하는 구조를 이해하고 활용하는 것이다.  
+입출력 완료 포트(I/O completion port)는 비동기 입출력 결과와 이 결과를 처리할 스레드에 관한 정보를 담고 있는 구조로 Overlapped Model 2에서 소개한 APC 큐와 비슷한 개념이다.  
+
+#### 입출력 완료 포트와 APC 큐의 차이점
+- 생성과 파괴  
+APC 큐는 각 스레드마다 자동으로 생성되고 파괴된다.  
+입출력 완료 포트는 CreateIoCompletionPort() 함수를 호출하여 생성하고 CloseHandle() 함수를 호출하여 파괴한다.
+
+- 접근 제약  
+APC 큐에 저장된 결과는 APC 큐를 소유한 스레드만 확인할 수 있지만, 입출력 완료 포트에서는 이런 제약이 없다.  
+대개 입출력 완료 포트에 접근하는 스레드를 별도로 두는데, 이를 작업자 스레드(Worker Thread)라 부른다.  
+이상적인 작업자 스레드 생성 개수는 CPU 개수 * N개이다(N >= 1)
+
+- 비동기 입출력 처리 방법  
+APC 큐에 저장된 결과를 처리하려면 해당 스레드는 alertable wait 상태에 진입해야 한다.  
+입출력 완료 포트에 저장된 결과를 처리하려면 작업자 스레드는 GetQueuedCompletionStatus() 함수를 호출해야 한다.
+
+#### Completion Port Model을 이용한 입출력 과정
+1. 응용 프로그램을 구성하는 임의의 스레드에서 비동기 입출력 함수를 호출함으로써 운영 체제에 입출력 작업을 요청한다.
+
+2. 모든 작업자 스레드는 GetQueuedCompletionStatus() 함수를 호출해 입출력 완료 포트를 감시한다.  
+완료한 비동기 입출력 작업이 아직 없다면 모든 작업자 스레드는 대기 상태가 된다.  
+이때 대기 중인 작업자 스레드 목록은 입출력 완료 포트 내부에 저장된다.
+
+3. 비동기 입출력 작업이 완료되면 운영쳊는 입출력 완료 포트에 결과를 저장한다.  
+이때 저장되는 정보를 입출력 완료 패킷(I/O completion packet)이라 부른다.
+
+4. 운영체제는 입출력 완료 포트에 저장된 작업자 스레드 목록에서 하나를 선택하여 깨운다.  
+대기 상태에서 깨어난 작업자 스레드는 비동기 입출력 결과를 처리한다.  
+이후 작업자 스레드는 필요에 따라 다시 비동기 입출력 함수를 호출할 수 있다.
+
+#### Completion Port Model을 이용한 소켓 입출력 절차
+1. CreateIoCompletionPort() 함수를 호출하여 입출력 완료 포트를 생성한다.
+
+2. CPU 개수에 비례하여 작업자 스레드를 생성한다.  
+모든 작업자 스레드는 GetQueuedCompletionStatus() 함수를 호출하여 대기 상태가 된다.
+
+3. 비동기 입출력을 지원하는 소켓을 생성한다.  
+이 소켓에 대한 비동기 입출력 결과가 저장되려면, CreateIoCompletionPort() 함수를 호출하여 소켓과 입출력 완료 포트를 연결해야 한다.
+
+4. 비동기 입출력 함수를 호출한다.  
+비동기 입출력 작업이 곧바로 완료되지 않으면, 소켓 함수는 SOCKET_ERROR를 리턴하고 오류 코드는 WSA_IO_PENDING으로 설정된다.
+
+5. 비동기 입출력 작업이 완료되면, 운영체제는 입출력 완료 포트에 결과를 저장하고, 대기 중인 스레드 하나를 깨운다.  
+대기 상태에서 깨어난 작업자 스레드는 비동기 입출력 결과를 처리한다.
+
+6. 새로운 소켓을 생성하면 3 ~ 5 단계를, 그렇지 않으면 4 ~ 5 단계를 반복한다.
+
+#### CreateIoCompletionPort()
+이 함수는 두 가지 역할을 한다.  
+1. 입출력 완료 포트를 생성한다.
+
+2. 소켓과 입출력 완료 포트를 연결한다.  
+소켓과 입출력 포트를 연결해두면 이 소켓에 대한 비동기 입출력 결과가 입출력 완료 포트에 저장된다.
+
+```
+HANDLE CreateIoCompletionPort(
+	HANDLE FileHandle,
+	HANDLE ExistingCompletionPort,
+	ULONG CompeletionKey,
+	DWORD NumberOfConcurrentThreads
+)(return 성공 - 입출력 완료 포트 핸들, 실패 - NULL)
+```
+
+- FileHandle  
+입출력 완료 포트와 연결할 파일 핸들이다.  
+소켓 프로그래밍에서는 소켓 디스크립터를 넣어주면 된다.  
+새로운 입출력 완료 포트를 생성할 때는 유효한 핸들 대신 INVALID_HANDLE_VALUE값을 사용해도 된다.
+
+- ExistingCompletionPort  
+파일 또는 소켓과 연결할 입출력 완료 포트 핸들이다.  
+이 값이 NULL이면 새로운 입출력 완료 포트를 생성한다.
+
+- CompletionKey  
+입출력 완료 패킷(I/O completion packet)에 들어갈 부가 정보로 32비트 값을 줄 수 있다.  
+입출력 완료 패킷은 비동기 입출력 작업이 완료될 때마다 생성되어 입출력 완료 포트에 저장되는 정보다.
+
+- NumberOfConcurrentThreads  
+동시에 실행할 수 있는 작업자 스레드의 개수다.  
+0을 사용하면 자동으로 CPU 개수와 같은 수로 설정된다.  
+운영체제는 실행 중인 작업자 스레드 개수가 여기서 설정한 값을 넘지 않도록 관리해준다.
+
+##### 사용 예
+- 입출력 완료 포트를 새로 생성
+```
+HANDLE hcp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
+if(hcp == NULL) return 1;
+```
+- 기존 소켓과 입출력 완료 포트를 연결
+```
+SOCKET sock;
+...
+HANDLE hResult = CreateIoCompletionPort((HANDLE)sock, hcp, (DWORD)sock, 0);
+if(hResult == NULL) return 1;
+```
+
+#### GetQueuedCompletionStatus()
+작업자 스레드는 GetQueuedCompletionStatus() 함수를 호출함으로써 입출력 완료포트에 입출력 완료 패킷이 들어올 때까지 대기한다.  
+입출력 완료 패킷이 입출력 완료 포트에 들어오면 운영체제는 실행 중인 작업자 스레드의 개수를 체크한다.  
+이 값이 CreateIoCompletionPort() 함수의 네 번째 인자로 설정한 값보다 작다면, 대기 상태인 작업자 스레드를 깨워서 입출력 완료 패킷을 처리하게 한다.
+
+```
+BOOL GetQueuedCompletionStatus(
+	HANDLE CompletionPort,
+	LPDWORD lpNumberOfBytes,
+	LPDWORD lpCompletionKey,
+	LPOVERLAPPED *lpOverlapped,
+	DWORD dwMilliseconds
+) (return 성공 - 0이 아닌 값, 실패 - 0)
+```
+- CompletionPort  
+입출력 완료 포트 핸들
+
+- lpNumberOfBytes  
+비동기 입출력 작업으로 전송된 바이트 수가 여기에 저장된다.
+
+- lpCompletionKey  
+CreateIoCompletionPort() 함수 호출 시 전달한 세 번째 인자(32비트)가 여기에 저장된다.
+
+- lpOverlapped  
+비동기 입출력 함수 호출 시 전달한 OVERLAPPED 구조체의 주소 값이 여기에 저장된다.
+
+- dwMiilliseconds  
+작업자 스레드가 대기할 시간을 밀리초 단위로 지정한다.  
+INFINITE 값을 넣으면 입출력 완료 패킷이 생성되어 운영체제가 깨울 때까지 무한히 대기한다.
+
+응용 프로그램이 작업자 스레드에 특별한 사실을 알리기 위해 직접 입출력 완료 패킷을 생성할 수도 있다.  
+이때 사용하는 함수는 PostQueuedCompletionStatus()이다.  
+각 인자의 의미는 GetQueuedCompletionStatus와 유사하다.
+
+소켓 입출력 모델 비교
+--------------------
+#### Select Model
+- 장점  
+모든 윈도우 운영체제는 물론, 유닉스/리눅스 운영체제에서도 사용할 수 있으므로 이식성이 높다.  
+윈도우와 유닉스/리눅스에서 모두 실행할 서버가 필요하고 이식할 때 코드 수정을 최소화하고 싶다면 유일하게 선택할 수 있는 모델이다.
+
+- 단점  
+하위 호환성을 위해 존재하며, 성능은 여섯가지 모델 중 가장 떨어진다.  
+스레드 당 처리할 수 있는 소켓 개수가 64개로 제한되어 있으므로, 그 이상의 소켓을 처리하려면 스레드를 여러 개 사용하는 것이 원칙이다.  
+하지만 윈도우 운영체제에서는 FD_SETSIZE를 재정의함으로써 스레드당 처리할 수 있는 소켓의 개수를 늘릴 수 있다.
+
+#### WSAAsyncSelect Model
+- 장점  
+소켓 이벤트를 윈도우 메시지 형태로 처리하므로 GUI 응용 프로그램과 잘 결합할 수 있다.  
+MFC 소켓 클래스에서 내부적으로 사용하는 모델이므로, 학습해두면 MFC 소켓 클래스의 내부 동작을 이해하고자 할 때 도움이 된다.
+
+- 단점  
+단일 윈도우 프로시저에서 일반 윈도우 메시지와 소켓 메시지를 처리해야 하므로 성능 저하 요인이 된다.
+
+#### WSAEventSelect Model  
+- 장점  
+Select 모델과 WSAAsyncSelect 모델의 특성을 혼합한 형태로, 비교적 뛰어난 성능을 제공하면서 윈도우를 필요로 하지 않는다.
+
+- 단점  
+스레드당 처리할 수 있는 소켓의 개수가 64개로 제한되어 있으므로, 그 이상의 소켓을 처리하려면 스레드를 여러 개 사용해야 한다.
+
+#### Overlapped Model
+- 장점  
+비동기 입출력을 통해 뛰어난 성능을 제공한다.
+
+- 단점  
+Overlapped Model 1 : 스레드당 처리할 수 있는 소켓의 개수가 64개ㅐ로 제한되어 있으므로, 그 이상의 소켓을 처리하려면 스레드를 여러 개 사용해야 한다.
+Overlapped Model 2 : 모든 비동기 소켓 함수에 대해 완료 루틴을 사용할 수 있는 것은 아니다.
+
+#### Completion Port Model
+- 장점  
+비동기 입출력과 완료 포트를 통해 가장 뛰어난 성능을 제공한다.
+
+- 단점  
+가장 단순한 소켓 입출력 방식(블로킹 소켓 + 스레드)과 비교하면 코딩이 복잡하지만 성능 면에서 특별한 단점은 없다.

@@ -60,12 +60,12 @@ int main(int argc, char* argv[]) {
 
 	//더미(dummy) 이벤트 객체 생성
 	WSAEVENT hEvent = WSACreateEvent();
-	if (hEvent = WSA_INVALID_EVENT) {
+	if (hEvent == WSA_INVALID_EVENT) {		// '=' 대입연산자로 잘못써서 찾느라 개고생
 		err_quit("WSACreateEvent()");
 	}
 	EventArray[nTotalSockets++] = hEvent;	//EventArray[0]에 핸들을 저장, 이 이벤트 객체는 특정 소켓과 짝짓지 않고 특별한 용도로 사용한다.
 
-	HANDLE hThread = CreateThread(NULL, 0, WorkerThread, NULL, 0, NULL);	//비동기 입출력 결과를 처리할 스레드르 생성한다.
+	HANDLE hThread = CreateThread(NULL, 0, WorkerThread, NULL, 0, NULL);	//비동기 입출력 결과를 처리할 스레드를 생성한다.
 	if (hThread == NULL) {
 		return 1;
 	}
@@ -123,6 +123,7 @@ DWORD WINAPI WorkerThread(LPVOID arg) {
 		//이벤트 객체가 신호 상태가 되기를 기다린다.
 		DWORD index = WSAWaitForMultipleEvents(nTotalSockets, EventArray, FALSE, WSA_INFINITE, FALSE);
 		if (index == WSA_WAIT_FAILED) {
+			err_display("wsa_wait_failed");
 			continue;
 		}
 		index -= WSA_WAIT_EVENT_0;
