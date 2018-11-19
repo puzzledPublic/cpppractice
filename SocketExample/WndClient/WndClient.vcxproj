@@ -19,9 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{2C0A71B9-22AE-44BD-9050-762B4820BB5A}</ProjectGuid>
+    <ProjectGuid>{933FD94D-07EC-42D1-8769-C928C3550F55}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>WndServer</RootNamespace>
+    <RootNamespace>WndClient</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -143,8 +143,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="GUITCPServer.cpp" />
-    <ClCompile Include="WSAAsyncSelectTCPServer.cpp" />
+    <ClCompile Include="GUITCPClient.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="resource1.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="GUITCPClient.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
