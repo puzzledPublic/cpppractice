@@ -20,13 +20,14 @@ int recvn(SOCKET s, char* buf, int len, int flags);
 
 DWORD WINAPI ClientMain(LPVOID arg);
 
-SOCKET sock;
-char buf[BUFSIZE + 1];
-HANDLE hReadEvent, hWriteEvent;
-HWND hSendButton;
-HWND hEdit1, hEdit2;
+SOCKET sock;		//소켓
+char buf[BUFSIZE + 1];	//데이터 송수신 버퍼
+HANDLE hReadEvent, hWriteEvent;	//읽기, 쓰기 이벤트
+HWND hSendButton;	//보내기 버튼
+HWND hEdit1, hEdit2;	//편집 컨트롤
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+	//이벤트 생성
 	hReadEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
 	if (hReadEvent == NULL) {
 		return 1;
@@ -36,15 +37,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		return 1;
 	}
 
+	//소켓 통신 스레드 생성
 	CreateThread(NULL, 0, ClientMain, NULL, 0, NULL);
-
+	
+	//대화 상자 생성
 	DialogBox(hInstance, MAKEINTRESOURCE(IDD_DIALOG2), NULL, DlgProc);
 
+	//이벤트 제거
 	CloseHandle(hReadEvent);
 	CloseHandle(hWriteEvent);
 
+	//소켓 종료
 	closesocket(sock);
 
+	//윈속 종료
 	WSACleanup();
 	return 0;
 }
@@ -60,11 +66,11 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	case WM_COMMAND:
 		switch (LOWORD(wParam))
 		{
-		case IDOK:
-			EnableWindow(hSendButton, FALSE);
-			WaitForSingleObject(hReadEvent, INFINITE);
-			GetDlgItemText(hDlg, IDC_EDIT3, buf, BUFSIZE + 1);
-			SetEvent(hWriteEvent);
+		case IDOK:	//보내기 버튼을 눌렀을때
+			EnableWindow(hSendButton, FALSE);	//보내기 버튼 비활성화
+			WaitForSingleObject(hReadEvent, INFINITE);	//읽기 이벤트가 set 될때까지 대기 (처음에 ReadEvent를 TRUE로 생성했으므로 바로 통과)
+			GetDlgItemText(hDlg, IDC_EDIT3, buf, BUFSIZE + 1);	//메시지 창에 쓰인 글을 버퍼에 담는다.
+			SetEvent(hWriteEvent);	//쓰기 완료 알림
 			SetFocus(hEdit1);
 			SendMessage(hEdit1, EM_SETSEL, 0, -1);
 			return TRUE;
@@ -150,9 +156,9 @@ DWORD WINAPI ClientMain(LPVOID arg) {
 	}
 
 	while (TRUE) {
-		WaitForSingleObject(hWriteEvent, INFINITE);
+		WaitForSingleObject(hWriteEvent, INFINITE);	//메인 스레드에서 WriteEvent가 set 될때까지 대기
 
-		if (strlen(buf) == 0) {
+		if (strlen(buf) == 0) {		//만일 버퍼에 아무것도 없다면 보내지 않고 다시 ReadEvent를 set 시켜 입력을 받는다.
 			EnableWindow(hSendButton, TRUE);
 			SetEvent(hReadEvent);
 			continue;
@@ -177,7 +183,7 @@ DWORD WINAPI ClientMain(LPVOID arg) {
 		DisplayText("[TCP 클라이언트] %d 바이트를 받았습니다.\r\n", retval);
 		DisplayText("[받은 데이터] %s\r\n", buf);
 
-		EnableWindow(hSendButton, TRUE);
+		EnableWindow(hSendButton, TRUE);	//메시지를 다 전송했으면 ReadEvent를 set 시켜 다음 입력을 대기한다.
 		SetEvent(hReadEvent);
 	}
 	return 0;

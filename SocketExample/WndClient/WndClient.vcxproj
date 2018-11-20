@@ -143,14 +143,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="GUITCPClient.cpp" />
+    <ClCompile Include="PrjTCPClient.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="prjresource.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="resource1.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="GUITCPClient.rc" />
+    <ResourceCompile Include="PrjTCPClient.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

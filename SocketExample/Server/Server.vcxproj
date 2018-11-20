@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CompletionPortTCPServer.cpp" />
+    <ClCompile Include="PrjTCPServer.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{617CADEE-1C8C-4385-B3FD-F5F1D7BDED5B}</ProjectGuid>

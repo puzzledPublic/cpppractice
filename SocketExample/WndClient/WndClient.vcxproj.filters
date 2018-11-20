@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="GUITCPClient.cpp">
+    <ClCompile Include="PrjTCPClient.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -26,9 +26,12 @@
     <ClInclude Include="resource1.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="prjresource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="GUITCPClient.rc">
+    <ResourceCompile Include="PrjTCPClient.rc">
       <Filter>리소스 파일</Filter>
     </ResourceCompile>
   </ItemGroup>
