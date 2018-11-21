@@ -186,10 +186,10 @@ recv() 함수의 리턴 값이 0 인 경우를 정상 종료(normal close, graceful close)라 부
 recv() 함수 사용 시 주의할 점은 세 번째 인자인 len으로 지정한 크기보다 적은 데이터가 응용 프로그램 버퍼에 복사될 수 있다는 사실이다.  
 이는 TCP가 데이터 경계를 구분하지 않는다는 특성에 기인한다.  
 따라서 자신이 받을 데이터의 크기를 미리 알고 있다면 그만큼 받을때까지 recv() 함수를 여러번 호출해야 한다.
-<hr>
-Select
---------------
+<hr>  
 
+Select  
+--------------
 #### 동작원리
 
 소켓 함수 호출이 성공할 수 있는 시점을 미리 알 수 있다.  
@@ -807,3 +807,115 @@ Overlapped Model 2 : 모든 비동기 소켓 함수에 대해 완료 루틴을 사용할 수 있는 것�
 
 - 단점  
 가장 단순한 소켓 입출력 방식(블로킹 소켓 + 스레드)과 비교하면 코딩이 복잡하지만 성능 면에서 특별한 단점은 없다.
+
+소켓 옵션
+---------
+처리 주체에 따라 크게 두 종류로 구분
+1. 소켓 코드가 처리하는 옵션  
+옵션을 적용하면 소켓 코드에서 해석하고 처리한다. 프로토콜 독립적인 성격이 있으나 옵션의 실제 적용 여부는 프로토콜 종류에 따라 달라진다.
+
+2. 프로토콜 구현 코드가 처리하는 옵션  
+옵션을 설정하면 프로토콜 구현 코드에서 해석하고 처리한다.  
+프로토콜 의존적인 성격이 있으므로 프로토콜 종류에 따라 옵션 자체가 달라진다.
+
+#### setsockopt()  
+소켓 옵션을 설정할 때는 setsockopt() 함수를 사용한다.
+```
+int setsockopt(
+	SOCKET s,
+	int level,
+	int optname,
+	const char *optval,
+	int optlen
+) (return 성공 - 0, 실패 - SOCKET_ERROR)
+```
+- s  
+옵션을 적용할 대상 소켓이다.
+
+- level  
+옵션을 해석하고 처리할 주체를 지시한다.  
+예를 들어 소켓 코드가 처리하면 SOL_SOCKET, IPv4 프로토콜 코드가 처리하면 IPPROTO_IP, IPv6 프로토콜 코드가 처리하면 IPPROTO_IP6, TCP 프로토콜 코드가 처리하면 IPPROTO_TCP를 사용한다.  
+옵션 이름이 정해지면 level 값은 자동으로 결정된다.
+
+- optname  
+설정할 옵션의 이름이다.
+
+- optval  
+설정할 옵션 값을 담고 있는 버퍼의 주소다.  
+옵션 값은 대부분 정수형이지만 구조체형인 경우도 있다.
+
+- optlen  
+optval이 가리키는 버퍼의 크기(바이트 단위)다.
+
+#### getsockopt()  
+소켓 옵션 값을 얻을 때는 getsockopt() 함수를 사용한다.
+```
+int getsockopt(
+	SOCKET s,
+	int level,
+	int optname,
+	char *optval,
+	int optlen
+) (return 성공 - 0, 실패 - SOCKET_ERROR)
+```
+- s  
+옵션 값을 얻을 대상 소켓이다.
+
+- level  
+setsockopt의 level과 의미가 같다.
+
+- optname  
+값을 얻을 옵션의 이름이다.
+
+- optval  
+얻은 옵션 값을 저장할 버퍼의 주소다.  
+옵션 값은 대부분 정수형이지만 구조체형인 경우도 있다.
+
+- optlen  
+값-결과(value-result) 인자로 사용한다.  
+함수 호출 전에는 optval이 가리키는 버퍼의 크기(바이트 단위)로 응용 프로그램에서 초기화한다.  
+함수 호출 후에는 얻은 옵션 값의 크기로 운영체제가 값을 채운다.
+
+#### level별 자주 사용하는 옵션
+
+-  SOL_SOCKET  
+
+	| optname |optval |get |set |설명 |
+	|:-------|:------|:---|:---|:----|
+	| SO_BROADCAST |BOOL |O |O |브로드캐스팅 데이터 전송 허용 여부 |
+	| SO_KEEPALIVE|BOOL|O|O|주기적으로 연결 상태 확인 여부|
+	| SO_LINGER |linger{} |O |O |소켓 송신 버퍼에 미전송 데이터가 있을 때 closesocket() 함수 리턴 지연 시간 설정|
+	| SO_SNDBUF, SO_RCVBUF |int |O |O |소켓 송,수신 버퍼의 크기 설정|
+	| SO_SNDTIMEO, SO_RCVTIMEO |int |O |O |데이터 송,수신 함수 호출 시 타임아웃 값 설정|
+	| SO_REUSEADDR |BOOL |O |O |지역 주소(IP 주소, 포트 번호) 재사용 허용 여부|
+
+- IPPROTO_IP
+
+	| optname |optval |get |set |설명 |
+	|:--------|:------|:---|:---|:----|
+	| IP_HDRINCL |BOOL |O |O |데이터 송신 시 IP 헤더 직접 포함 여부|
+	| IP_TTL |int |O |O |IP 패킷의 TTL값 설정|
+	| IP_MULTICAST_IF |IN_ADDR{} |O |O |멀티캐스트 패킷을 보낼 인터페이스 선택|
+	| IP_MULTICAST_LOOF |BOOL |O |O |멀티캐스트 패킷의 루프백 여부 (자신이 보낸 패킷을 자신도 받는지)|
+	| IP_ADD_MEMBERSHIP|ip_mreq{} |X |O |멀티캐스트 그룹 가입|
+	| IP_DROP_MEMBERSHIP |ip_mreq{} |X |O |멀티캐스트 그룹 탈퇴|
+
+- IPPROTO_IPV6
+
+	| optname |optval |get |set |설명 |
+	|:--------|:------|:---|:---|:----|
+	| IPV6_HDRINCL |BOOL |O |O |데이터 송신 시 IP 헤더 직접 포함 여부|
+	| IPV6_UNICAST_HOPS |int |O |O |IP 패킷의 TTL 값 설정|
+	| IPV6_MULTICAST_IF |DWORD |O |O |멀티캐스트 패킷을 보낼 인터페이스 선택|
+	| IPV6_MULTICAST_HOPS |int |O |O |멀티캐스트 패킷의 TTL 값 설정|
+	| IPV6_MULTICAST_LOOP |BOOL |O |O |멀티캐스트 패킷의 루프백 여부|
+	| IPV6_ADD_MEMBERSHIP |ipv6_mreq{} |O |O |멀티캐스트 그룹 가입| 
+	| IPV6_DROP_MEMBERSHIP |ipv6_mreq{} |O |O |멀티캐스트 그룹 탈퇴|
+
+- IPPROTO_TCP
+
+	| optname |optval |get |set |설명 |
+	|:--------|:------|:---|:---|:----|
+	|TCP_NODELAY |BOOL |O |O |Nagle 알고리즘 작동 여부|
+
+ 
