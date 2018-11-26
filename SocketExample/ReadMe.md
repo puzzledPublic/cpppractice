@@ -188,6 +188,153 @@ recv() 함수 사용 시 주의할 점은 세 번째 인자인 len으로 지정한 크기보다 적은 데이
 따라서 자신이 받을 데이터의 크기를 미리 알고 있다면 그만큼 받을때까지 recv() 함수를 여러번 호출해야 한다.
 <hr>  
 
+UDP 모델
+---------
+TCP 소켓과 달리 운영체제 내부에 송신 버퍼가 없다.  
+UDP는 TCP와 달리 데이터 재전송과 흐름제어를 하지 않으므로 TCP와 같은 송신 버퍼(데이터 재전송용)는 존재하지 않는다.  
+
+#### UDP 서버 동작 순서  
+1. socket() 함수로 소켓을 생성함으로써 사용할 프로토콜을 결정한다.
+
+2. bind() 함수로 지역 IP 주소와 지역 포트 번호를 결정한다.
+
+3. 클라이언트가 보낸 데이터를 recvfrom() 함수로 받는다.  
+이때 원격 IP 주소와 원격 포트 번호, 즉 클라이언트의 주소를 알 수 있다.
+
+4. 받은 데이터를 처리한 결과를 sendto() 함수로 보낸다.
+
+5. 모든 작업을 마치면 closesocket() 함수로 소켓을 닫는다.
+
+#### UDP 클라이언트 동작 순서
+1. socket() 함수로 소켓을 생성함으로써 사용할 프로토콜을 결정한다.
+	- (Optional) UDP 소켓에 대해 connect() 함수를 호출 할 수 있다.  
+	이 경우 통신할 상대의 주소 정보가 내부적으로 기억되므로, sendto(), recvfrom() 대신 send(), recv() 함수를 사용해 특정 UDP 서버와 통신할 수 있다.  
+	이로인한 장점은 sendto() 함수를 사용한 경우보다 효율적이다.  
+	서버 주소를 한 번만 설정하면 send() 함수가 이 정보를 재활용하기 때문이다.  
+	또 데이터를 받은 후 송신자의 주소(IP, PORT)를 확인하지 않아도 된다.  
+	recv() 함수는 connect() 함수로 설정한 대상을 제외한 다른 UDP 응용 프로그램이 보낸 데이터는 수신하지 않기 때문이다.
+
+	- connect() 함수는 특정 IP 주소와 포트 번호로 나타낼 수 있는 고정된 대상과 통신함을 의미한다.  
+	통신 대상을 변경하려면 언제든지 connect() 함수를 다시 호출하면 된다.
+
+2. sendto() 함수로 서버에 데이터를 보낸다.  
+이때 원격 IP 주소와 원격 포트 번호는 물론, 지역 IP 주소와 지역 포트 번호도 결정된다.  
+
+3. 서버가 처리해 보낸 데이터를 recvfrom() 함수로 받는다.
+
+4. 모든 작업을 마치면 closesocket() 함수로 소켓을 닫는다.
+
+#### UDP 모델을 사용할때 주의점
+- 블로킹 소켓 사용할 경우, 송수신 함수의 호출 순서가 맞지 않으면 교착상태가 발생할 수 있다.
+- 클라이언트는 데이터를 받은 후 송신자의 주소(IP, PORT)를 확인해야 한다.  
+recvfrom() 함수는 UDP 서버가 보낸 데이터는 물론, 전혀 다른 UDP 응용 프로그램이 보낸 데이터도 수신할 수 있기 때문이다.
+
+#### sendto() 함수
+응용 프로그램의 데이터를 운영체제의 송신 버퍼에 복사함으로써 데이터를 전송한다.  
+UDP의 경우, sendto() 함수 호출시 소켓의 지역 IP 주소와 지역 포트 번호가 아직 결정되지 않은 상태라면 운영체제가 자동으로 결정해준다.  
+즉, sendto() 함수가 TCP의 bind() 함수 역할을 대신한다.
+
+```
+int sendto(
+	SOCKET s,
+	const char *buf,
+	int len,
+	int flags,
+	const struct sockaddr *to,
+	int to len
+) (return 성공 - 보낸 바이트 수, 실패 - SOCKET_ERROR)
+```
+- s  
+통신에 사용할 소켓
+
+- buf  
+보낼 데이터를 담고 있는 응용 프로그램 버퍼의 주소
+
+- len  
+보낼 데이터 크기(바이트 단위)
+
+- flags  
+sendto() 함수의 동작을 바꾸는 옵션으로 대부분은 0을 사용한다.  
+사용 가능한 값으로 MSG_DONTROUTE, MSB_OOB가 있다.
+
+- to  
+목적지 주소를 담고 있는 소켓 주소 구조체  
+UDP의 경우 특정 호스트나 라우터 주소는 물론이고 브로드캐스트나 멀티캐스트 주소를 사용할 수도 있다.
+
+- tolen  
+목적지 주소를 담고 있는 소켓 주소 구조체의 크기(바이트 단위)
+
+#### sendto() 함수 주의점
+- sendto() 함수는 UDP는 물론 TCP 소켓에서도 사용가능하며, 이 경우 to와 tolen 인자는 무시된다.  
+TCP 소켓에 사용할 때만 flags 인자에 MSG_OOB를 사용할 수 있다.
+
+- sendto() 함수로 보낸 데이터는 독립적인 UDP 데이터 그램(패킷)으로 만들어져 전송되며, 수신 측에서는 recvfrom() 함수 호출 한 번으로 이 데이터를 읽을 수 있다.  
+따라서 UDP를 사용할 경우에는 TCP와 달리 응용 프로그램 수준에서 메시지 경계를 구분하는 작업을 할 필요가 없다.
+
+- UDP 소켓에 대해 sendto() 함수를 호출할 경우 한 번에 보낼 수 있는 데이터의 크기에 제한이 있다.  
+최소값은 0, 최댓값은 65507(65537 - 20(IP 헤더 크기) - 8(UDP 헤더 크기)) 바이트이다.  
+실제로는 최댓값보다 훨씬 작은 크기를 사용하는 것이 바람직하다.  
+특히 UDP를 이용해 브로드캐스트 패킷을 보낼 경우 512 바이트보다 작은 크기를 사용할 것을 권고한다.
+
+- sendto() 함수로 보낸 응용 프로그램 데이터는 커널(운영체제) 영역에 복사되어 전송된 후 곧바로 버려진다.  
+sendto() 함수가 리턴했다고 실제 데이터 전송이 완료된 것은 아니며, 데이터 전송이 끝났어도 상대방이 받았는지 확인할 수 없다.
+
+- 블로킹 소켓을 사용할 경우, 커널 영역에 데이터를 복사할 공간이 부족하다면 sendto() 함수는 호출시 블록된다.
+
+#### recvfrom() 함수
+운영체제의 수신 버퍼에 도착한 데이터를 응용 프로그램 버퍼에 복사한다.  
+TCP의 recv() 함수와 다른점은, UDP 패킷 데이터를 한 번에 하나만 읽을 수 있다는 점이다.  
+즉, 응용 프로그램 버퍼를 크게 잡는다고 많은 데이터를 한꺼번에 읽을 수 없다.
+
+```
+int recvfrom(
+	SOCKET s,
+	char *buf,
+	int len,
+	int flags,
+	struct sockaddr *from,
+	int *fromlen
+) (return 성공 - 받은 바이트 수, 실패 - SOCKET_ERROR)
+```
+- s  
+통신에 사용할 소켓  
+sendto() 함수에 사용하는 소켓과 달리, 이 소켓은 반드시 지역 주소(IP, PORT)가 미리 결정되어 있어야 한다.
+
+- buf  
+받은 데이터를 저장할 응용 프로그램 버퍼의 주소
+
+- len  
+응용 프로그램 버퍼의 크기(바이트 단위)  
+도착한 UDP 패킷 데이터가 len보다 크면 len만큼 복사하고 나머지는 버린다.  
+이때 recvfrom() 함수는 SOCKET_ERROR를 리턴한다.  
+따라서 예상되는 UDP 패킷 데이터의 최대 크기를 감안해 응용 프로그램 버퍼를 준비해야 한다.
+
+- flags  
+recv() 함수의 동작을 바꾸는 옵션으로, 대부분은 0을 사용한다.  
+사용 가능한 값으로 MSG_PEEK, MSG_OOB가 있다.  
+recvfrom() 함수의 기본 동작은 수신 버퍼의 데이터를 응용 프로그램 버퍼에 복사 후 해당 데이터를 수신 버퍼에서 삭제하는 것이지만 MSG_PEEK 옵션을 사용하면 수신 버퍼에 데이터가 계속 남는다.
+
+- from  
+소켓 주소 구조체를 전달하면 송신자의 주소 정보(IP, PORT)로 채워진다.
+
+- fromlen  
+정수형 변수를 from이 가리키는 소켓 주소 구조체의 크기로 초기화한 후 전달한다.  
+recvfrom() 함수가 리턴하면 *fromlen 변수는 recvfrom() 함수가 채워넣은 주소 정보의 크기(바이트 단위)를 갖는다.
+
+#### recvfrom() 함수 주의점  
+- recvfrom() 함수는 UDP 소켓은 물론, TCP 소켓에도 사용 가능하며, 이 경우 from과 fromlen 인자는 무시된다.  
+TCP 소켓에 사용할때 만 flags 인자에 MSG_OOB를 사용할 수 있다.
+
+- sendto() 함수로 보낸 데이터는 독립적인 UDP 데이터그램(패킷)으로 만들어져 전송되며, 수신 측에서는 recvfrom() 함수 호출 한 번으로 이 데이터를 읽을 수 있다.  
+따라서 UDP를 사용할 경우, TCP와 달리 응용 프로그램 수준에서 메시지 경계를 구분하는 작업을 할 필요가 없다.
+
+- UDP 소켓에 대해 recvfrom() 함수를 호출 할 경우 리턴 값이 0이 될 수 있는데, 이는 상대방이 sendto() 함수 호출시 데이터 크기를 최솟값인 0으로 설정했다는 뜻이다.  
+UDP 프로토콜에는 연결 설정과 종료 개념이 없으므로 recvfrom() 함수의 리턴 값이 0이라고 해서 특별한 의미가 있는 것은 아니다.  
+반면, TCP 소켓에 대해 recvfrom() 함수를 호출할 경우 리턴 값이 0이면 정상 종료(normal close 또는 graceful close)를 의미한다.
+
+- 블로킹 소켓을 사용할 경우, 소켓 수신 버퍼에 도착한 데이터가 없으면 recvfrom() 함수는 호출시 블록된다.
+<hr>
+
 Select  
 --------------
 #### 동작원리
@@ -555,7 +702,7 @@ BOOL WSAGetOverlappedResult(
 비동기 입출력 함수 호출에 사용했던 소켓을 넣는다.
 
 - lpOverlapped  
-비동기 입출력 함수 호출에 사용했던 WSAOVEERLAPPED 구조체를 다시 넣는다.
+비동기 입출력 함수 호출에 사용했던 WSAOVERLAPPED 구조체를 다시 넣는다.
 
 - lpcbTransfer  
 전송된 바이트 수가 여기에 저장된다.
@@ -918,4 +1065,305 @@ setsockopt의 level과 의미가 같다.
 	|:--------|:------|:---|:---|:----|
 	|TCP_NODELAY |BOOL |O |O |Nagle 알고리즘 작동 여부|
 
- 
+ #### 주요 SOL_SOCKET Level Option 설명
+1. SO_BROADCAST  
+	해당 소켓을 이용해 브로드캐스트 데이터를 보낼 수 있다.  
+	프로토콜 특성상 TCP 소켓에는 사용할 수 없고, UDP 소켓에만 사용할 수 있다.
+	```
+	사용예
+	BOOL bEnable = TRUE;
+	retval = setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char*)&bEnable, sizeof(bEnable));
+	if(retval == SOCKET_ERROR) err_quit("setsockopt()");
+	```
+
+2. SO_KEEPALIVE  
+	TCP 프로토콜 수준에서 연결 여부를 확인하려고 상대 TCP에 주기적으로(약 2시간) TCP 패킷을 보낸다.  
+	이때 상대 TCP 반응에 따라
+	
+	- 정해진 시간 안에 응답하는 경우  
+	TCP 연결에 문제가 없는 상태므로 정상적으로 동작
+	
+	- 정해진 사간 안에 응답하지 않는 경우  
+	TCP 연결에 일시적 문제가 있는 상태로 간주할 수 있으므로 몇 번 더 TCP 패킷을 보내보고 그럼에도 응답이 없다면 자동으로 소켓을 닫아 시스템 자원 소모를 막는다.  
+	나중에 응용 프로그램이 해당 소켓 사용시 오류가 발생한다.
+	
+	- RST(reset) 패킷으로 응답하는 경우  
+	TCP는 예상치 못한 엉뚱한 패킷이 도달하면 비정상적인 상황으로 간주해 상대편에 RST 패킷을 보냄으로써 연결을 강제 종료한다는 특징이 있다.  
+	RST 패킷이 도달하면 사실상 연결이 끊어진 것으로 자동으로 소켓을 닫아 시스템 자원 소모를 막는다.  
+	나중에 응용 프로그램이 해당 소켓 사용시 오류가 발생한다.
+
+	```
+	사용예
+	BOOL bEnable = TRUE;
+	retval = setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (char*)&bEnable, sizeof(bEnable));
+	if(retval == SOCKET_ERROR) err_quit("setsockopt()");
+	``` 
+
+	SO_KEEPALIVE 옵션은 TCP 소켓에만 사용 가능하다.  
+	일반적으로 TCP 서버의 연결 대기 소켓에 대해 설정하며, 이 경우 accept() 함수가 리턴하는 소켓도 자동으로 SO_KEEPALIVE 옵션이 설정된 상태로 만들어진다.  
+	TCP 연결은 단순한 물리적 연결이 아닌 연결 설정 정보를 주고 받아 상태 정보를 일치시킨 상태로 통신하는 논리적 연결이다.  
+	따라서 데이터 교환이 없다면 연결이 끊어진 경우를 감지 못하는 특성이 있다.  
+	또한 접속 클라이언트 수에 비례하여 소켓을 생성하여 시스템 자원 소모가 늘어나므로 연결이 끊어진 소켓은 바로바로 닫아야 한다.
+
+3. SO_LINGER  
+	소켓 송신 버퍼에 미전송 데이터가 있을 때 closesocket() 함수의 리턴 지연 시간을 제어할 수 있다.  
+	TCP 소켓 사용시, closesocket() 함수는 두 가지 기능을 한다.
+	
+	1. 소켓을 닫고 할당된 운영체제 자원을 반환한다.  
+	따라서 closesocket() 함수 리턴 후 해당 소켓을 통신에 사용할 수 없다.
+	2. TCP 프로토콜 수준에서 연결 종료 절차를 시작한다.  
+	즉 TCP 연결 종료를 위한 최초 패킷(FIN)을 상대방에게 보낸다.  
+
+	그런데 closesocket() 함수 호출 시점에 send() 함수를 보내려 했던 이전 데이터가 송신 버퍼에 아직 남아있다면 다음 방식으로 동작 옵션을 줄 수 있다.
+	
+	1. closesocket() 함수는 곧바로 리턴하고, 송신 버퍼의 데이터를 백그라운드로 모두 보내고 TCP 연결을 정상 종료한다.
+	2. closesocket() 함수는 곧바로 리턴하고, 송신 버퍼의 데이터를 삭제하고 TCP 연결을 강제 종료한다.
+	3. 송신 버퍼의 데이터를 모두 보내고 TCP 연결을 정상 종료한 후 closesocket() 함수가 리턴한다.  
+	만약 일정 시간 안에 송신 버퍼의 데이터를 모두 보내지 못하면 TCP 연결을 강제 종료한 후 closesocket() 함수가 리턴한다.  
+	이때 송신 버퍼에 남은 데이터는 삭제한다.
+
+	SO_LINGER 옵션 값으로는 linger 구조체를 사용한다.
+	```
+	struct linger{
+		u_short l_onoff;
+		u_short l_linger;   
+	}
+	typedef struct linger LINGER;
+	```
+	- l_onoff  
+	값이 0이면 closesocket() 함수는 곧바로 리턴한다.  
+	0이 아니면 l_linger 멤버로 설정한 시간(초 단위)동안 리턴하지 않고 대기한다.
+
+	- l_linger  
+	closesocket() 함수가 리턴하지 않고 대기할 시간을 초 단위로 설정한다.  
+	0 또는 양의 정수값을 사용한다.
+
+
+	| LINGER |         |closesocket()|
+	|:------|:---------|:------------|
+	| l_onoff| l_linger|
+	| 0      | 사용안함| 동작 (1) default|
+	| 1      | 0       | 동작 (2)    |
+	| 1      | 양의 정수| 동작 (3)   |
+
+	```
+	사용예
+	LINGER optval;
+	optval.l_onoff = 1;
+	optval.l_linger = 10;
+	retval = setsockopt(sock, SOL_SOCKET, SO_LINGER, (char*)&optval, sizeof(optval));
+	if(retval == SOCKET_ERROR) err_quit("setsockopt()");
+	```
+
+	TCP 소켓에만 사용할 수 있다.  
+	연결 대기 소켓에 대해 한 번만 설정해두면 accept() 함수가 리턴하는 소켓도 자동으로 SO_LINGER 옵션이 설정된 상태로 만들어진다.
+
+4. SO_SNDBUF, SO_RCVBUF  
+	운영체제가 소켓에 할당하는 송,수신 버퍼의 크기를 변경할 수 있다.  
+	버퍼의 크기를 무한정 늘릴 수 없으므로 제대로 설정됐는지 확인이 필요하다. (getsockopt() 함수 사용)  
+	권장 사항은, UDP 소켓은 소켓 버퍼 크기를 언제든 변경해도 되지만 TCP 소켓은 연결이 이루어지기 전에 변경하는 것이다.  
+	즉, TCP 서버에서는 listen() 함수, TCP 클라이언트에서는 connect() 함수 호출 전에 옵션을 설정하는 것이 좋다.  
+	서버에 옵션 적용시 연결 대기 소켓에 대해 한번만 설정해두면 accept() 함수가 리턴하는 소켓도 자동으로 같은 옵션이 설정된다.
+
+	```
+	사용예
+	int optval, optlen;
+	
+	//현재 수신 버퍼값 확인
+	optlen = sizeof(optval);
+	retval = getsockopt(listen_sock, SOL_SOCKET, SO_RCVBUF, (char*)&optval, &optlen);
+	if(retval == SOCKET_ERROR) err_quit("getsockopt()");
+	
+	//수신 버퍼값 2배로 늘려 적용
+	optval *= 2;
+	retval = setsockopt(listen_sock, SOL_SOCKET, SO_RCVBUF, (char*)&optval, sizeof(optval));
+	if(retval == SOCKET_ERROR) err_quit("setsockopt()");
+	
+	//수신 버퍼값 2배로 늘려졌는지 확인
+	optlen = sizeof(optval);
+	retval = getsockopt(listen_sock, SOL_SOCKET, SO_RCVBUF, (char*)&optval, &optlen);
+	if(retval == SOCKET_ERROR) err_quit("getsockopt()");
+	```
+
+5. SO_SNDTIMEO, SO_RCVTIMEO  
+	socket() 함수로 만든 소켓은 블로킹 소켓이므로, 데이터 전송 함수 호출 시 조건이 만족되지 않으면 무한정 블록되어 교착 상태가 발생할 수 있다.  
+	이때 SO_SNDTIMEO, SO_RCVTIMEO 옵션으로 타임아웃을 설정해두면, 데이터 전송 함수(send, recv, sendto, recvfrom 등)가 작업 완료와 상관 없이 일정 시간 후에 리턴하게 된다.  
+	옵션 값으로는 정수형을 사용하며, 밀리초단위로 타임아웃을 지정한다.
+
+	```
+	사용예
+	int optval = 3000; //3초
+	retval = setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&optval, sizeof(optval));
+	if(retval == SOCKET_ERROR) err_quit("setsockopt()");
+	```
+
+	TCP, UDP 소켓에 모두 사용 가능하다.  
+	교착 상태 방지 목적외에 상대가 일정 시간안에 응답하는지 여부를 알고 싶을때도 사용할 수 있다. (ex : Ping)
+
+6. SO_REUSEADDR  
+	현재 사용 중인 IP 주소와 포트 번호를 재사용할 수 있다.  
+	다시 말해 현재 사용 중인 IP 주소, 포트 번호를 이용해 bind() 함수를 (성공적으로) 호출할 수 있다.  
+	TCP, UDP 소켓 모두 사용 가능하다.  
+
+	SO_REUSEADDR 옵션의 목적
+	1. TCP 서버 종료 후 재실행 시 bind() 함수에서 오류가 발생하는 일을 방지한다.  
+	unix / linux에서 멀티 프로세스 기반으로 작성한 TCP 서버를 실행할 때 종종 발생하는 문제다.  
+	새로운 접속이 이루어지면 fork() 함수로 자식 프로세스를 생성하여 요청을 처리하는데 TCP 서버 문제가 발생해 강제 종료되더라도 자식 프로세스가 남아 포트 번호를 계속 사용하므로 서버를 재실행시 bind() 오류가 발생한다.  
+	단일 프로세스로 작성한 TCP 서버에서도 발생할 수 있는데 이는 서버의 비정상 종료로 인해 지역 주소(IP, PORT)의 TCP 상태가 TIME_WAIT에 머물러 있기 때문이다.  
+	unix / linux에서는 바인딩 오류가 흔한 편이지만 windows에서는 상대적으로 드물다.  
+	하지만 코드 이식성을 고려해 서버 작성시 옵션 설정을 하는것이 좋다.
+
+	2. 여러 IP 주소를 보유한 호스트에서 같은 기능의 서버를 IP 주소별로 따로 운영할 수 있게한다.  
+	unix / linux에서 서버 실행 시 IP 주소가 달라도 포트 번호만 같으면 바인딩 오류가 발생한다.  
+	여러 IP 주소를 보유한 호스트에서 같은 기능의 서버를 IP 별로 따로 운영하고 싶다면 SO_REUSEADDR 옵션을 설정해야 한다.
+
+	3. 멀티캐스팅 응용 프로그램이 같은 포트 번호를 사용할 수 있게 한다.  
+	이는 UDP 서버에 한정해 활용한다. (TCP는 멀티캐스팅을 할 수 없다.)  
+
+	```
+	사용예
+	BOOL optval = TRUE;
+	retval = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char*)&optval, sizeof(optval));
+	if(retval == SOCKET_ERROR) err_quit("setsockopt()");
+	```
+
+#### 주요 IPPROTO_IP, IPPROTO_IPV6 Level Option 설명
+1. IP_MULTICAST_IF, IPV6_MULTICAST_IF  
+	IP 주소를 둘 보유한 호스트에서 멀티캐스트 데이터를 보낼 네트워크 인터페이스를 선택할 때 사용한다.  
+	설정하지 않으면 IP 라우팅 기능에 따라 각 패킷별로 적절한 네트워크 인터페이스가 선택되어 전송된다.
+	```
+	사용예
+	//특정 IP 주소 (149.52.121.68)로 멀티캐스트 데이터를 보내도록 설정
+	IN_ADDR local_addr;
+	local_addr.s_addr = inet_addr("149.52.121.68");
+	setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF, (char*)&local_addr, sizeof(local_addr));
+	```
+	
+2. IP_MULTICAST_TTL, IPV6_MULTICAST_TTL  
+	멀티캐스트 패킷이 생성될 때 IP 헤더의 TTL 필드는 기본값 1로 설정된다.  
+	TTL은 라우터를 지날때마다 1씩 감소하는데 0이되면 패킷이 폐기된다.  
+	따라서 TTL = 1은 라우트 경계를 넘어갈 수 없음을 뜻한다.  
+	만약 라우터 경계를 넘어 멀티캐스트 패킷을 보내려면 이 옵션을 사용해야 한다.
+	```
+	사용예
+	int ttl = 2;
+	retval = setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL, (char*)&ttl, sizeof(ttl));
+	if(retval == SOCKET_ERROR) err_quit("setsockopt()");
+	```
+
+3. IP_MULTICAST_LOOP, IPV6_MULTICAST_LOOP  
+	멀티캐스트 그룹에 가입한 응용 프로그램이 자신의 그룹에 멀티캐스트 데이터를 보내면 자기 자신도 받는다.(default)  
+	```
+	사용예
+	//자신이 보낸 멀티캐스트 데이터를 받지 않는다.
+	BOOL optval = FALSE;
+	setsockopt(sock, IPPROTO_IP, IP_MULTICAST_LOOP, (char*)&optval, sizeof(optval));
+	```
+
+4. IP_ADD_MEMBERSHIP / IP_DROP_MEMBERSHIP, IPV6_ADD_MEMBERSHIP / IPV6_ADD_MEMBERSHIP  
+	멀티캐스트 데이터를 받으려면 반드시 멀티캐스트 그룹에 가입해야 한다.  
+	IP*_ADD_MEMBERSHIP은 가입할때, IP*_DROP_MEMBERSHIP은 탈퇴할때 사용한다.  
+	IPv4는 ip_merq 구조체를, IPv6는 ipv6_merq 구조체를 옵션 값으로 사용한다.  
+
+	```
+	#include <ws2tcpip.h>
+	
+	typedef struct ip_mreq {
+		IN_ADDR imr_multiaddr;
+		IN_ADDR imr_interface;
+	} IP_MREQ;
+
+	typedef struct ipv6_mreq {
+		IN6_ADDR ipv6mr_multiaddr;
+		ULONG ipv6mr_interface;
+	} IPV6_MREQ;
+	```
+	- imr_multiaddr  
+	가입하거나 탈퇴할 IPv4 멀티캐스트 주소
+
+	- imr_interface  
+	멀티캐스트 패킷을 받을 네트워크 인터페이스 IPv4 주소  
+	INADDR_ANY(= 0)를 전달해 자동으로 선택되게 하는 것이 일반적
+
+	- ipv6mr_multiaddr  
+	가입하거나 탈퇴할 IPv6 멀티캐스트 주소
+
+	- ipv6mr_interface  
+	멀티캐스트 패킷을 받을 네트워크 인터페이스의 인덱스  
+	0을 전달해 자동으로 선택되게 하는 것이 일반적
+
+	```
+	사용예 
+	
+	//IPv4
+	//멀티캐스트 주소 구조체 생성
+	struct ip_mreq mreq;
+	mreq.imr_multiaddr.s_addr = inet_addr(MULTICATIP);
+	mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+	
+	//멀티캐스트 그룹 가입
+	retval = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char*)&mreq, sizeof(mreq));
+	if(retval == SOCKET_ERROR) err_quit("setsockopt()");
+	
+	//멀티캐스트 그룹 탈퇴
+	retval = setsockopt(sock, IPPROTO_IP, IP_DROP_MEMBERSHIP, (char*)&mreq, sizeof(mreq));
+	if(retval == SOCKET_ERROR) err_quit("setsockopt()");
+
+	//IPv6
+	//주소 변환(문자열 -> IPv6)
+	SOCKADDR_IN6 temp_addr;
+	int addrLen = sizeof(temp_addr);
+	WSAStringToAddress(MULTICASTIP, AF_INET6, NULL, (SOCKADDR*)&temp_addr, &addrLen);
+
+	//멀티캐스트 주소 구조체 생성
+	struct ipv6_mreq mreq;
+	mreq.ipv6_multiaddr = temp_addr.sin6_addr;
+	mreq.ipv6_interface = 0;
+
+	//멀티캐스트 그룹 가입
+	retval = setsockopt(sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char*)&mreq, sizeof(mreq));
+	if(retval == SOCKET_ERROR) err_quit("setsockopt()");
+
+	//멀티캐스트 그룹 탈퇴
+	retval = setsockopt(sock, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, (char*)&mreq, sizeof(mreq));
+	if(retval == SOCKET_ERROR) err_quit("setsockopt()");
+	```
+
+#### 주요 IPPROTO_TCP Level Option 설명  
+1. TCP_NODELAY  
+	Nagle 알고리즘 작동을 중지하는 역할을 한다.  
+	Nagle 알고리즘은 작은 패킷이 불필요하게 많이 생성되는 일을 방지해 네트워크 트래픽을 감소시키는 알고리즘이다.  
+	TCP 전송 효율과 네트워크 활용도를 높인다는 장점 때문에 TCP 프로토콜에서는 기본 동작이다.
+
+	TCP는 신뢰성 있는 데이터 전송 기법 중 하나로 ACK에 기반한 데이터 재전송을 한다.  
+	즉, 데이터를 보낸 후 상대방이 잘 받았는지 ACK 패킷을 통해 확인하고, 그렇지 않을 경우 재전송한다.  
+	그런데 데이터를 보낼 때마다 ACK가 도착할 때까지 대기하면 네트워크 대역폭 활용도가 낮아지는 문제가 있다.  
+	TCP에서는 네트워크 자원을 효율적으로 활용하기위해 슬라이딩 윈도우 방식을 사용한다.  
+	이 방식은 ACK를 받지 못해도 윈도우 크기만큼 데이터를 계속 보낼 수 있으므로 성능을 높일 수 있다.  
+	여기에 추가적으로 각 데이터에 대해 상대방이 ACK로 응답할 것을 요구하면 성능이 떨어지기에 마지막으로 성공적으로 받은 데이터에 대해서만 ACK로 응답하는 방식을 사용한다.
+
+	- Nagle 알고리즘 동작 방식
+	1. 보낼 데이터가 MSS(Maximum Segment Size)로 정의된 크기만큼 쌓이면 상대편에 무조건 보낸다.  
+	이 경우 슬라이딩 윈도우 방식으로 데이터를 계속 보낼 수 있다.
+
+	2. 보낼 데이터가 MSS보다 작으면 이전에 보낸 데이터에 대한 ACK가 오기를 기다린다.  
+	ACK가 도착하면 보낼 데이터가 MSS보다 작더라도 상대편에 보낸다.  
+	이 경우 데이터를 전송할 때마다 ACK를 기다리고, ACK를 받으면 다음 데이터를 전송하는 동작을 반복한다.
+
+	요약하자면 데이터가 충분히 크면 곧바로 보내고, 그렇지 않으면 데이터가 쌓일 때까지 대기한다.  
+	단, 데이터가 충분히 쌓이지 않았더라도 이전에 보낸 데이터를 상대방이 받았다면 다음 데이터를 보낸다.  
+
+	- Nagle 알고리즘 장점  
+	작은 패킷이 불필요하게 많이 생성되는 일을 방지해 네트워크 트래픽을 감소시킨다.
+
+	- Nagle 알고리즘 단점  
+	데이터가 충분히 쌓일 때까지 또는 ACK가 도달할 때까지 대기하는 시간 때문에 응용 프로그램의 반응 시간이 길어질 수 있다.
+
+	TCP_NODELAY 옵션은 Nagle 알고리즘의 장점을 포기하는 대신 응용 프로그램의 반응 속도를 빠르게 할 때 사용한다.
+
+	```
+	사용예
+	//Nagle 알고리즘 사용안함
+	BOOL optval = TRUE;
+	setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char*)&optval, sizeof(optval));
+	```
