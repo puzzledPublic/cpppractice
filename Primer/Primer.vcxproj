@@ -114,14 +114,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Folder.cpp" />
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="Message.cpp" />
-    <ClCompile Include="TestFolderAndMessage.cpp" />
+    <ClCompile Include="MoveTest.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Folder.h" />
-    <ClInclude Include="Message.h" />
+    <ClInclude Include="MoveTest.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
