@@ -5,6 +5,7 @@
 class MyString
 {
 public:
+	static void test();
 	MyString(const char* = "hello");
 	MyString(const MyString&);
 	MyString& operator=(const MyString&);

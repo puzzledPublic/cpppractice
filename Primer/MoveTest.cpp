@@ -1,5 +1,19 @@
 #include "MoveTest.h"
 
+void MyString::test()
+{
+	MyString ms("hellow");
+	MyString ms2(ms);
+
+	MyString ms3;
+
+	ms3 = std::move(ms2);
+
+	ms.print();
+	ms2.print();
+	ms3.print();
+}
+
 MyString::MyString(const char *c) : len(std::strlen(c))
 {
 	std::cout << "MyString(const char*) »ý¼ºÀÚ" << "\n";
