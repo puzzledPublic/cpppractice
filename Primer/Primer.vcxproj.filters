@@ -15,7 +15,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Concurrency7.cpp">
+    <ClCompile Include="Concurrency9.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Concurrency8.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Concurrency10.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

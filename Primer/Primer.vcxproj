@@ -19,7 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Concurrency7.cpp" />
+    <ClCompile Include="Concurrency10.cpp" />
+    <ClCompile Include="Concurrency8.cpp" />
+    <ClCompile Include="Concurrency9.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7F3456E2-9634-46D9-986C-000C6207D85D}</ProjectGuid>
