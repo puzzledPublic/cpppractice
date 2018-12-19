@@ -31,7 +31,7 @@ private:
 	const unsigned long hierarchy_value;
 	unsigned long previous_hierarchy_value;
 	static thread_local unsigned long this_thread_hierarchy_value;	//현재 스레드가 갖는 '최소' 계층번호, thread_local - hierarchical_mutex 클래스에 하나 존재(static)하고 각 스레드에서 사본을 갖는다
-
+	
 	void check_for_hierarchy_violation() {
 		if (this_thread_hierarchy_value <= hierarchy_value) {
 			throw std::logic_error("mutex hierarchy violated");

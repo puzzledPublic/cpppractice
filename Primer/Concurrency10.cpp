@@ -2,7 +2,7 @@
 
 //listing 3.12
 //std::call_once()를 사용한 Thread safe한 클래스 멤버의 늦은 초기화
-//std::call_once() - 여러 스레드가 하나의 포인터를 한번만 초기화함을 보장함
+//std::call_once() - 여러 스레드 중 하나의 함수객체(callable object)를 한번만 수행됨을 보장
 class data_packet {};
 class connection_info {};
 class connection_handle {
