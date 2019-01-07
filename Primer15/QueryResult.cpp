@@ -13,3 +13,18 @@ std::ostream & print(std::ostream &os, const QueryResult &qr)
 	}
 	return os;
 }
+
+std::set<typename QueryResult::line_no>::const_iterator QueryResult::begin()
+{
+	return lines->cbegin();
+}
+
+std::set<typename QueryResult::line_no>::const_iterator QueryResult::end()
+{
+	return lines->cend();
+}
+
+std::shared_ptr<std::vector<std::string>> QueryResult::get_file()
+{
+	return file;
+}

@@ -142,16 +142,24 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AndQuery.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="NotQuery.cpp" />
+    <ClCompile Include="OrQuery.cpp" />
     <ClCompile Include="Query.cpp" />
     <ClCompile Include="QueryResult.cpp" />
     <ClCompile Include="TextQuery.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AndQuery.h" />
+    <ClInclude Include="BinaryQuery.h" />
+    <ClInclude Include="NotQuery.h" />
+    <ClInclude Include="OrQuery.h" />
     <ClInclude Include="Query.h" />
     <ClInclude Include="QueryResult.h" />
     <ClInclude Include="Query_base.h" />
     <ClInclude Include="TextQuery.h" />
+    <ClInclude Include="WordQuery.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Text.txt" />

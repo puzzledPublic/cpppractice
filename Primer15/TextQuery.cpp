@@ -1,5 +1,4 @@
 #include "TextQuery.h"
-#include <iostream>
 
 //입력 파일을 읽고 줄 내용을 줄 번호에 사상한 map을 만든다.
 TextQuery::TextQuery(std::ifstream &is) : file(new std::vector<std::string>)
@@ -12,7 +11,6 @@ TextQuery::TextQuery(std::ifstream &is) : file(new std::vector<std::string>)
 		std::string word;
 		while (line >> word) {			//해당 줄의 각 단어에 대해
 			erase_special_symbol(word);
-			std::cout << word << "\n";
 			auto& lines = wm[word];		//lines는 shared_ptr이다.
 			if (!lines) {				//word 내 단어가 처음이면 이 포인터는 null이다.
 				lines.reset(new std::set<line_no>);		//새 set을 할당한다.

@@ -27,6 +27,15 @@
     <ClCompile Include="Query.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="NotQuery.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="AndQuery.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="OrQuery.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TextQuery.h">
@@ -39,6 +48,21 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Query.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="WordQuery.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="NotQuery.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="BinaryQuery.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="AndQuery.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="OrQuery.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
