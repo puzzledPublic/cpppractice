@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
 	//(CPU 개수 * 2)개의 작업자 스레드 생성
 	HANDLE hThread;
 	for (int i = 0; i < (int)si.dwNumberOfProcessors * 2; i++) {
-		hThread = CreateThread(NULL, 0, WorkerThread, hcp, 0, NULL);	//스레드 함수 인자로 입출력 안료 포트 핸들 값을 전달한다.
+		hThread = CreateThread(NULL, 0, WorkerThread, hcp, 0, NULL);	//스레드 함수 인자로 입출력 완료 포트 핸들 값을 전달한다.
 		if (hThread == NULL) {
 			return 1;
 		}
@@ -103,7 +103,7 @@ int main(int argc, char* argv[]) {
 		ptr->wsaBuf.buf = ptr->buf;
 		ptr->wsaBuf.len = BUFSIZE;
 
-		//비동기 입출력 시작
+		//비동기 입출력 시작	(기다리는 WorkerThread가 깨어나게끔 비동기 함수 호출)
 		flags = 0;
 		retval = WSARecv(client_sock, &ptr->wsaBuf, 1, &recvBytes, &flags, &ptr->overlapped, NULL);
 		if (retval == SOCKET_ERROR) {

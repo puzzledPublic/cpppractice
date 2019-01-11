@@ -2,12 +2,13 @@
 //
 
 #include "stdafx.h"
-#include "network.h"
+
+#include "Server.h"
 
 int main()
 {
-	Network net;
-	net.startServer();
+	Server server;
+	server.run(9000);
     return 0;
 }
 

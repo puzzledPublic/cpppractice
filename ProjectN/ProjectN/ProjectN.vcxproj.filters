@@ -13,7 +13,7 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="헤더 파일\Network">
+    <Filter Include="헤더 파일\Server">
       <UniqueIdentifier>{0ff69a85-6137-4f21-bb60-b504dd2017b2}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -27,8 +27,11 @@
     <ClInclude Include="targetver.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="network.h">
-      <Filter>헤더 파일\Network</Filter>
+    <ClInclude Include="Server.h">
+      <Filter>헤더 파일\Server</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientSession.h">
+      <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -38,7 +41,7 @@
     <ClCompile Include="ProjectN.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="network.cpp">
+    <ClCompile Include="Server.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
