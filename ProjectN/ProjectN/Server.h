@@ -1,14 +1,6 @@
 #pragma once
 
 #include "stdafx.h"
-struct SOCKETINFO{
-	OVERLAPPED overlapped;
-	SOCKET sock;
-	char buf[1025];
-	int recv_bytes;
-	int send_bytes;
-	WSABUF wsa_buf;
-};
 
 class Server {
 	friend void worker_thread(HANDLE icp);

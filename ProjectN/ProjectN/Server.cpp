@@ -1,5 +1,11 @@
 #include "stdafx.h"
 #include "Server.h"
+#include "ClientSession.h"
+#include "Packet.h"
+#include "PacketParser.h"
+#include <mutex>
+
+std::mutex mut;
 
 void Server::run(int server_port)
 {
@@ -69,7 +75,7 @@ void Server::create_worker_thread()
 {
 	SYSTEM_INFO si;
 	GetSystemInfo(&si);
-	for (int i = 0; i < (int)si.dwNumberOfProcessors; i++) {
+	for (int i = 0; i < (int)si.dwNumberOfProcessors + 2; i++) {
 		std::thread t(worker_thread, icp);
 		t.detach();
 	}
@@ -80,7 +86,7 @@ void Server::accept_sock()
 	SOCKET client_sock;
 	SOCKADDR_IN client_addr;
 	int client_addr_len;
-	DWORD recv_bytes, flags;
+	DWORD recv_bytes = -1, flags;
 
 	for (;;) {
 		client_addr_len = sizeof(client_addr);
@@ -93,10 +99,11 @@ void Server::accept_sock()
 
 		CreateIoCompletionPort((HANDLE)client_sock, icp, client_sock, 0);
 
-		SOCKETINFO* ptr = new SOCKETINFO;
+		ClientSession* ptr = new ClientSession;
 		if (ptr == nullptr) {
 			break;
 		}
+
 		ZeroMemory(&ptr->overlapped, sizeof(ptr->overlapped));
 		ptr->sock = client_sock;
 		ptr->recv_bytes = ptr->send_bytes = 0;
@@ -105,6 +112,9 @@ void Server::accept_sock()
 		
 		flags = 0;
 		int retval = WSARecv(client_sock, &ptr->wsa_buf, 1, &recv_bytes, &flags, &ptr->overlapped, NULL);
+		mut.lock();
+		std::cout << "accept thread " << std::this_thread::get_id() << "recv bytes" << recv_bytes << std::endl;
+		mut.unlock();
 		if (retval == SOCKET_ERROR) {
 			if (WSAGetLastError() != ERROR_IO_PENDING) {
 				std::cout << "WSARecv()" << std::endl;
@@ -117,14 +127,15 @@ void Server::accept_sock()
 void worker_thread(HANDLE icp)
 {
 	int retval;
-	
+
 	while (TRUE) {
 		DWORD cbTransferred;
 		SOCKET client_sock;
-		SOCKETINFO* ptr;
-
+		ClientSession* ptr;
 		retval = GetQueuedCompletionStatus(icp, &cbTransferred, (LPDWORD)&client_sock, (LPOVERLAPPED*)&ptr, INFINITE);
-
+		mut.lock();
+		std::cout << std::this_thread::get_id() << " cbTransferred : " << cbTransferred << std::endl;
+		mut.unlock();
 		SOCKADDR_IN client_addr;
 		int addrLen = sizeof(client_addr);
 		getpeername(ptr->sock, (SOCKADDR*)&client_addr, &addrLen);
@@ -150,6 +161,7 @@ void worker_thread(HANDLE icp)
 		else {
 			ptr->send_bytes += cbTransferred;
 		}
+
 		if (ptr->recv_bytes > ptr->send_bytes) {
 			ZeroMemory(&ptr->overlapped, sizeof(ptr->overlapped));
 			ptr->wsa_buf.buf = ptr->buf + ptr->send_bytes;
@@ -157,6 +169,9 @@ void worker_thread(HANDLE icp)
 
 			DWORD sendBytes;
 			retval = WSASend(ptr->sock, &ptr->wsa_buf, 1, &sendBytes, 0, &ptr->overlapped, NULL);
+			mut.lock();
+			std::cout << std::this_thread::get_id() <<" send bytes : " << sendBytes << std::endl;
+			mut.unlock();
 			if (retval == SOCKET_ERROR) {
 				if (WSAGetLastError() != WSA_IO_PENDING) {
 					std::cout << "WSASend()" << std::endl;
@@ -171,9 +186,12 @@ void worker_thread(HANDLE icp)
 			ptr->wsa_buf.buf = ptr->buf;
 			ptr->wsa_buf.len = 1025;
 
-			DWORD recvBytes;
+			DWORD recvBytes = 0;
 			DWORD flags = 0;
 			retval = WSARecv(ptr->sock, &ptr->wsa_buf, 1, &recvBytes, &flags, &ptr->overlapped, NULL);
+			mut.lock();
+			std::cout << std::this_thread::get_id() << " recv bytes : " << recvBytes << std::endl;
+			mut.unlock();
 			if (retval == SOCKET_ERROR) {
 				if (WSAGetLastError() != WSA_IO_PENDING) {
 					std::cout <<  "WSARecv()" << std::endl;
